@@ -125,7 +125,10 @@ kubectl exec -it {pod-name} sh
 #### Pod 삭제
 ```bash
  # pod 삭제
-kubectl delete pod {pod-name}
+kubectl delete po {pod-name}
+
+# 전체 삭제
+kubectl delete po --all
 ```
 
 > #### minikube ip 관련
@@ -244,6 +247,12 @@ kubectl describe service {service-name}
 kubectl describe svc {service-name}
 ```
 
+#### 현재 경로에 있는ㄴ yaml 파일 적용
+
+```bash
+kubectl apply -f .
+```
+
 ### 새로운 버전의 Pod 배포
 
 - 새로운 버전의 pod를 배포하기 위해 기존 pod를 지우고 새로운 pod를 생성하면 생성되는 기간동안 서비스 사용이 불가하다.
@@ -285,3 +294,63 @@ spec:
 
 서비스는 기존 포드를 바라보다가 새로운 포드가 배포되면 새로운 포드를 바라보도록 변경하면 된다.
 `describe` 명령어를 통해 서비스의 labels를 확인할 수 있다.
+
+
+## Section 8: Kubernetes ReplicaSets
+
+### Pod의 한계
+
+- 결론부터 말하면 실제 서비스에서는 Pod를 직접 사용하지 않는다.
+- 왜냐하면 pod는 다양한 이유로 종료될 수 있기 때문이다.
+- 그리고 직접 배포한 pod가 종료된다면 그 pod는 자동적으로 다시 재시작되지 않는다.
+
+### ReplicaSets
+
+- ReplicaSets는 Pod를 관리하는 객체이다.
+- ReplicaSets는 Pod의 수를 관리하고, Pod가 종료되면 새로운 Pod를 생성한다.
+- [ReplicaSet API](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/replica-set-v1/)
+- ReplicaSets의 yaml 파일 내에는 Pod 관련 내용도 포함된다.
+
+### ReplicaSet 구성 yaml 파일 예시
+
+```yaml
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  # Unique key of the ReplicaSet instance
+  name: replicaset-example
+
+spec:
+  selector:
+    matchLabels:
+      app: nginx
+  # 3 Pods should exist at all times.
+  replicas: 3
+  template:  # template for the pods
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.14.2
+```
+
+- template 내부에 pod의 내용을 작성한다.
+- replica의 이름은 pod의 이름과 동일한 것을 사용하는 것이 좋다.
+- 또한 pod는 replica의 관리를 받고 있기에 따로 이름을 가질 필요가 없다.
+- replica는 동일한 label을 가진 포드를 관리하고 포드가 어떤 이유간에 종료되면 새로운 포드를 실행시킨다.
+
+### ReplicaSet 명령어
+
+- 기존 명령어와 동일하고 `replicaset` 혹은 `rs` 를 사용하면 된다.
+
+### ReplicaSet 내부 pod가 종료될 때
+
+- ReplicaSet는 Pod를 관리하기 때문에 Pod가 종료되면 새로운 Pod를 생성한다.
+- 만약 `replicas` 필드의 값이 2라면 같은 pod가 2개 생성된다.
+- 그리고 서비스는 네트워크의 엔드포인트, 즉 이 경우엔 방문할 브라우저를 나타내는데 엔드포인트가 두 개 이상의 포드에 서비스되고 요청에 응답하는 포드가 지속적으로 변경된다는 게 쿠버네티스의 동작이다.
+
+### 공식문서의 권장사항
+
+- 공식문서를 보면 대부분의 경우 ReplicaSet 대신 배포, 생성을 권장한다는 경고 문구가 있다.
