@@ -431,3 +431,97 @@ kubectl rollout undo deployment {deployment-name} --to-revision={revision-number
 - 그렇기에 롤백 후에는 yaml 파일도 바로 수정해 주어야 한다.
 - 그렇기에 긴급할 때(배포 후, 비정상 동작할 때와 같은)만 사용하는 것을 추천한다.
 
+
+## Section 10: Networking and Services Discovery
+
+### Networking
+
+- 쿠버네티스 내에서도 두 개 이상의 컨테이너가 네트워크 동작을 해야 한다.
+- 이를 위한 방법은 아래처럼 다양하다.
+
+#### 1. 한 Pod 내부에 컨테이너 같이 넣기
+
+- 한 Pod 내부에 여러 컨테이너를 넣어서 네트워크를 공유하는 방법이다.
+- 각 컨테이너는 로컬호스트로 인식이 가능하다.
+- 하지만 동일한 포드 내에서 어플리케이션과 데이터베이스를 같이 관리하면 포드 관리가 훨씬 복잡해지므로 잘 사용하지 않는다.
+- 또한 포드에 문제가 생기면 어떤 컨테이너에서 문제가 생겼는지 원인을 찾기도 어렵다.
+- 그렇기 때문에 하나의 포드에 두 개 이상의 컨테이너가 꼭 들어가야 하는 상황을 제외하고는 사용하지 않는다.
+
+#### 2. kube-dns 서비스를 사용
+
+- `kube-dns`
+  - 쿠버네티스는 `kube-dns` 서비스를 백그라운드에서 자동으로 실행한다.
+  - 이 서비스는 쿠버네티스 클러스터 내부에서 DNS 서비스를 제공한다.
+  - dns 서버는 간단하게 말하면 여기서는 도메인 이름을 IP 주소로 변환해주는 서비스이다.
+  - key-value 형태로 저장되어 있어서 key를 통해 value를 찾아준다.
+- 서비스 간의 통신을 하면 kube-dns에서 가고자 하는 도메인을 통해 ip 주소를 얻어온다. 그리고 얻어 온 IP 주소를 통해 컨테이너와 통신한다.
+
+
+### Namespace
+
+- 네임스페이스는 쿠버네티스의 리소스를 별도의 영역으로 분할하는 방법이다.
+- 예를 들어 여러 가지 포드들을 용도 별로 나누어서 front-end, back-end 등의 네임스페이스로 나눌 수 있다.
+- 네임스페이스를 따로 설정하지 않으면 기본 네임스페이스인 `default` 에 할당되고 `kubectl get all` 을 실행했을 때도 `default` 네임스페이스에 있는 리소스만 출력된다.
+
+#### 네임스페이스 명령어
+
+- `namespace` 는 `ns` 라는 약어로 사용할 수 있다.
+- 특정 네임스페이스 안에 있는 리소스를 사용하고 싶을 때는 `-n {namespace-name}` 을 붙여주면 된다.
+
+```bash
+
+1. 네임스페이스 목록
+
+```bash
+kubectl get namespaces
+```
+
+2. 네임스페이스 내부의 리소스 목록
+
+```bash
+kubectl get po -n {namespace-name}
+
+kubectl get svc -n {namespace-name}
+
+kubectl get all -n {namespace-name}
+```
+
+### Service Discovery
+
+- 실행 중인 pod에 접속해서 아래와 같이 ip를 직접 확인할 수 있다.
+
+```shell
+> cat /etc/resolv.conf
+nameserver 10.96.0.10
+search default.svc.cluster.local svc.cluster.local cluster.local
+options ndots:5
+```
+
+- 이는 `kubectl get all` 에서 확인할 수 있는 ip와 동일하다.
+- 또한 `nslookup` 을 통해 여러 서비스에 접근할 수 있는 것을 확인할 수 있다.
+
+```shell
+> nslookup fleetman-webapp
+nslookup: can't resolve '(null)': Name does not resolve
+
+Name:      fleetman-webapp
+Address 1: 10.96.174.185 fleetman-webapp.default.svc.cluster.local
+
+> nslookup database
+nslookup: can't resolve '(null)': Name does not resolve
+
+Name:      database
+Address 1: 10.108.186.215 database.default.svc.cluster.local
+```
+
+- database의 실제 주소는 사실 `database.default.svc.cluster.local` 이다.
+- 그렇기에 먼저 database 라는 이름을 가진 주소를 찾는다.
+- 만약 없다면 `/etc/resolve.conf` 에 있는 `search` 항목을 하나씩 붙여가며 찾는다.
+- FQDN(Fully Qualified Domain Name, 절대(전체) 도메인 네임)에서 `default` 는 `default` 네임스페이스를 의미한다.
+- 그래서 `default` 네임스페이스에 속한 것이면 위처럼 이름만 적어서 찾고 다른 네임스페이스면 전체 도메인 이름을 사용하는 것이 좋다.
+- 만약 다른 네임스페이스의 것을 찾고 싶다면 아래와 같이 네임스페이스를 붙여서 찾아야 한다.
+
+```shell
+> nslookup {service name}.{namespace name}
+```
+
