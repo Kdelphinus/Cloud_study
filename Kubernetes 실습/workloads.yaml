@@ -1,8 +1,9 @@
 apiVersion: apps/v1
-kind: ReplicaSet
+kind: Deployment
 metadata:
   name: webapp
 spec:
+#  minReadySeconds: 30  # 사용 가능한 포드를 새로 생성하는데 걸리는 시간(확인을 위해 30으로 설정)
   selector:
     matchLabels:
       app: webapp
