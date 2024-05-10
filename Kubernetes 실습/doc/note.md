@@ -354,3 +354,80 @@ spec:
 ### 공식문서의 권장사항
 
 - 공식문서를 보면 대부분의 경우 ReplicaSet 대신 배포, 생성을 권장한다는 경고 문구가 있다.
+
+
+## Section 9: Kubernetes Deployments
+
+### Deployments(배포)
+
+- 배포는 레플리카 세트를 관리하는 객체이다.
+- 쿠버네티스에서 배포는 기본적으로 보다 정교한 형태의 레플리카 세트라고 할 수 있다.
+- 레플리카 세트에서 중단 없이 자동 업데이트(롤링 업데이트)를 할 수 있는 기능을 추가한 것과 비슷하다.
+- [Deployment API](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/deployment-v1/)
+
+### 배포 중 문제가 생겼을 때
+
+- 이미지 이름이 없거나 네트워크 문제가 생겨서 이미지를 가져오지 못할 때는 기존 레플리카 셋은 계속 유지되고 새로운 레플리카 셋은 무한 루프를 돌며 이미지를 가져온다.
+- 기존 레플리카 셋이 종료되지 않았기에 서비스는 기존 버전으로 계속해서 실행되고 있는 상태다.
+- 그렇기에 문제를 천천히 찾아본 후, 수정하여 적용하면 된다.
+
+### Deployment 구성 yaml 파일 예시
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  # Unique key of the Deployment instance
+  name: deployment-example
+spec:
+  replicas: 3
+  template:
+    metadata:
+      labels:
+          app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.14.2
+```
+
+### 롤링 업데이트
+
+- 새로운 버전으로 업데이트 할 때, 기존 버전이 중단되지 않도록 업데이트 하는 방법이다.
+- 과정은 아래와 같다
+  1. 새로운 레플리카 셋을 생성한다.
+  2. 새로운 레플리카 셋이 준비되면 기존 레플리카 셋을 제거한다.
+  3. 이때 기존 레플리카 셋 자체를 삭제하는 것이 아니라 레플리카 수를 0으로 만든다.
+  4. 기존 레플리카 셋이 남아있기에 추후 롤백이 가능하다.
+- 방법은 yaml 파일에서 버전만 변경하고 `apply` 명령을 실행하면 된다.
+- 기존 레플리카 버전은 최대 10까지 보관한다.
+
+### Deployment 명령어
+
+- 기존 명령어와 동일하고 `deployment` 혹은 `deploy` 를 사용하면 된다.
+
+#### Rollout 상태 확인
+
+```bash
+kubectl rollout status deployment {deployment-name}
+```
+
+#### Rollout 이력 확인
+
+```bash
+kubectl rollout history deployment {deployment-name}
+```
+
+#### Rollback
+
+```bash
+kubectl rollout undo deployment {deployment-name}
+
+# 특정 버전 지정
+kubectl rollout undo deployment {deployment-name} --to-revision={revision-number}
+```
+
+- Rollback은 유용하지만 롤백 후에 yaml 파일과 동일하지 않은 형태임을 인지해야 한다.
+- 그렇기에 롤백 후에는 yaml 파일도 바로 수정해 주어야 한다.
+- 그렇기에 긴급할 때(배포 후, 비정상 동작할 때와 같은)만 사용하는 것을 추천한다.
+
