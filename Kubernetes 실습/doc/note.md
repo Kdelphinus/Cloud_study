@@ -543,3 +543,35 @@ Address 1: 10.108.186.215 database.default.svc.cluster.local
 - 마이크로 서비스는 각자 독립적으로 배포되고 실행되며 서로 교류하며 동작한다.
 - 마이크로 서비스는 비지니스 영역에서 하나의 특정 영역만 처리해야 한다.
 - Highly Cohesive, Loosely Coupled(높은 응집도, 낮은 결합도)를 지향한다.
+
+### Microservice Database
+
+- 대부분의 회사들은 통합 데이터베이스를 사용했을 것이다.
+- 하지만 마이크로서비스는 통합 데이터베이스를 용납하지 않는다.
+- 왜냐하면 서비스 간의 경계를 넘나들고 시스템의 어느 부분이라도 데이터베이스를 읽거나 쓸 수 있기 때문이다. 높은 응집도도 낮은 결합도도 지키지 못한다.
+- 예를 들어 유저의 id, 비밀번호, 주소를 저장하는 데이터베이스를 마이크로서비스로 나눈다고 한다면 다음과 같이 나눌 수 있다.
+  - 유저 정보 서비스: id, 비밀번호
+  - 주소 정보 서비스: 주소
+
+#### Bounded Context
+
+- 거대한 모듈에서 다른 걸로 나누는 것을 Bounded Context라고 한다.
+- 서비스는 만들기 전까지 하나의 서비스만 가지고 있는지 확인하기 어렵다.
+- 그렇기에 서비스를 만들고 필요하다면 재구조화 하면 된다.
+- 이런식으로 데이터베이스를 쪼개가면 된다.
+
+---
+
+### 실습 이미지들
+
+- 백엔드
+  - [Position Simulator](https://hub.docker.com/r/richardchesterwood/k8s-fleetman-position-simulator): 파일에서 차량의 위치를 읽음, 그 후 큐로 데이터를 보냄
+  - [ActiveMQ](https://hub.docker.com/r/richardchesterwood/k8s-fleetman-queue): 큐에 데이터를 받아서 처리함
+  - [Position Tracker](https://hub.docker.com/r/richardchesterwood/k8s-fleetman-position-tracker): 큐의 위치를 읽고 위치와 관련된 다양한 계산을 수행함
+- 프론트엔드
+  - [API Gateway](https://hub.docker.com/r/richardchesterwood/k8s-fleetman-api-gateway)
+    - 백엔드 서비스에 대한 요청을 받아서 적절한 서비스로 보내는 역할
+    - 백엔드 마이크로서비스가 변하는 것을 막을 수 없기에 API Gateway를 사용
+    - 프론트엔드는 절대로 백엔드 마이크로서비스를 직접적으로 접근해선 안 된다.
+  - [Frontend Webapp](https://hub.docker.com/r/richardchesterwood/k8s-fleetman-webapp-angular): 자바스크립트 프론트엔드
+
