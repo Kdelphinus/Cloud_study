@@ -142,6 +142,7 @@ kubectl delete po --all
 > - 강의에서 주어진 port는 30080 포트이다. 따라서 `localhost:30080`으로 접근하면 된다.
 > - 만약 동작하지 않는다면 `kubectl port-forward webapp 30080:80` 을 실행한 뒤, 접속하면 된다.
 > - service를 사용하면 위 명령어를 사용하면 안 된다.
+> - 정확히는 `kubectl port-forward {service name} {port}:{nodePort}` 이다.
 > 
 > 
 > ##### docker driver 사용 시
@@ -565,8 +566,15 @@ Address 1: 10.108.186.215 database.default.svc.cluster.local
 ### 실습 이미지들
 
 - 백엔드
-  - [Position Simulator](https://hub.docker.com/r/richardchesterwood/k8s-fleetman-position-simulator): 파일에서 차량의 위치를 읽음, 그 후 큐로 데이터를 보냄
-  - [ActiveMQ](https://hub.docker.com/r/richardchesterwood/k8s-fleetman-queue): 큐에 데이터를 받아서 처리함
+  - [Position Simulator](https://hub.docker.com/r/richardchesterwood/k8s-fleetman-position-simulator)
+    - 파일에서 차량의 위치를 읽음, 그 후 큐로 데이터를 보냄
+    - 메시지를 받아서 큐에 메시지를 보내기에 데이터를 받을 포트가 필요 없음, 따라서 **서비스를 사용하지 않음**
+    - 그렇기에 간단한 파드로 배포해도 되지만 환경변수를 변경해야 하는 요구사항이 있다.
+    - 또한 그냥 파드로 실행하면 여러 원인으로 종료되었을 때 다시 시작하지 않을 것이다.
+    - 레플리카 셋도 방법이지만 추후 **서비스를 수정하면 롤링 배포를 해야 하기에 배포를 사용** 할 것이다.
+  - [ActiveMQ](https://hub.docker.com/r/richardchesterwood/k8s-fleetman-queue)
+    - 큐에 데이터를 받아서 처리함
+    - 포트는 관리자 콘솔에 접근할 수 있도록 외부 포트를 뺀 것과 내부에서 컨테이너가 접근할 수 있는 포트 두 개를 염
   - [Position Tracker](https://hub.docker.com/r/richardchesterwood/k8s-fleetman-position-tracker): 큐의 위치를 읽고 위치와 관련된 다양한 계산을 수행함
 - 프론트엔드
   - [API Gateway](https://hub.docker.com/r/richardchesterwood/k8s-fleetman-api-gateway)
@@ -574,4 +582,33 @@ Address 1: 10.108.186.215 database.default.svc.cluster.local
     - 백엔드 마이크로서비스가 변하는 것을 막을 수 없기에 API Gateway를 사용
     - 프론트엔드는 절대로 백엔드 마이크로서비스를 직접적으로 접근해선 안 된다.
   - [Frontend Webapp](https://hub.docker.com/r/richardchesterwood/k8s-fleetman-webapp-angular): 자바스크립트 프론트엔드
+
+
+### yaml 파일에 속한 리소스 모두 삭제
+
+```Bash
+kubectl delete -f {yaml-file / directory}
+```
+
+### pod에 환경변수 설정
+
+```yaml
+...
+spec:
+  containers:
+    - name: position-simulator
+      image: richardchesterwood/k8s-fleetman-position-simulator:release2
+      env:  # 환경 변수 추가
+        - name: SPRING_PROFILES_ACTIVE
+          value: "rabbitmq"
+```
+
+### pod 로그 검사
+
+```Bash
+kubectl logs {pod-name}
+
+# 실시간 로그 확인
+kubectl logs -f {pod-name}
+```
 
