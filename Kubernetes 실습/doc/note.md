@@ -196,7 +196,7 @@ spec:
 
 - `type: LoadBalancer`는 클라우드 제공자에서만 지원한다.
 - 로컬에서 사용하려면 아래 두 개중 하나를 사용하면 된다.
-  - `type: ClusterIp`
+  - `type: ClusterIP`
     - 클러스터 내부에서만 접근 가능하다.
     - 주로 클러스터 내부에서 통신하고 외부 트래픽에 노출시키지 않을 때 사용한다.
   - `type: NodePort`
@@ -576,12 +576,16 @@ Address 1: 10.108.186.215 database.default.svc.cluster.local
     - 큐에 데이터를 받아서 처리함
     - 포트는 관리자 콘솔에 접근할 수 있도록 외부 포트를 뺀 것과 내부에서 컨테이너가 접근할 수 있는 포트 두 개를 염
   - [Position Tracker](https://hub.docker.com/r/richardchesterwood/k8s-fleetman-position-tracker): 큐의 위치를 읽고 위치와 관련된 다양한 계산을 수행함
+    - 큐에서 받은 메시지를 읽고 REST 인터페이스를 노출한다.
+    - 이를 통해 고객이 차량 서비스에 접근할 수 있다.
+    - 컨테이너가 큐의 메시지를 받기 때문에 팬딩되던 메시지는 사라지고 확인되 메시지 숫자가 증가함을 확인할 수 있다.
 - 프론트엔드
   - [API Gateway](https://hub.docker.com/r/richardchesterwood/k8s-fleetman-api-gateway)
     - 백엔드 서비스에 대한 요청을 받아서 적절한 서비스로 보내는 역할
     - 백엔드 마이크로서비스가 변하는 것을 막을 수 없기에 API Gateway를 사용
     - 프론트엔드는 절대로 백엔드 마이크로서비스를 직접적으로 접근해선 안 된다.
   - [Frontend Webapp](https://hub.docker.com/r/richardchesterwood/k8s-fleetman-webapp-angular): 자바스크립트 프론트엔드
+    - 
 
 
 ### yaml 파일에 속한 리소스 모두 삭제
