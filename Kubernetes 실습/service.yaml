@@ -27,7 +27,6 @@ metadata:
 spec:
   selector:
     app: queue
-    release: "1"
 
   ports:
   # queue에서 사용하는 관리자 콘솔(브라우저에 노출시킬 용도)
@@ -40,3 +39,39 @@ spec:
     port: 61616
 
   type: NodePort
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: fleetman-position-tracker
+
+spec:
+  selector:
+    app: position-tracker
+
+  ports:
+    # queue에서 사용하는 관리자 콘솔(브라우저에 노출시킬 용도)
+    - name: http
+      port: 8080  # 컨테이너 내부에서 사용하는 포트
+
+  type: ClusterIP  # 클러스터 내부에만 노출
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: fleetman-api-gateway
+
+spec:
+  selector:
+    app: api-gateway
+
+  ports:
+    # queue에서 사용하는 관리자 콘솔(브라우저에 노출시킬 용도)
+    - name: http
+      port: 8080  # 컨테이너 내부에서 사용하는 포트
+
+  type: ClusterIP
