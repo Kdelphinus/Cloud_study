@@ -1,0 +1,29 @@
+# What do you want? (무엇을 원하는가?)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongo-pvc
+spec:
+  storageClassName: mylocalstorage
+  accessModes:
+    - ReadWriteOnce  # 한 번에 다중 노드에 의해 마운트될 수 있는 볼륨을 원하는지에 대한 옵션
+  resources:
+    requests:
+      storage: 20Gi  # db가 필요한 용량(물리적 저장소에 요구할 용량)
+
+---
+
+# How do we want it implemented? (어떻게 실행할 것인가?)
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: local-storage  # 이름 정의(현재는 로컬을 사용할 거기에 local-storage라고 이름 정의)
+spec:  # 어떤 방식으로 볼륨을 사용할 것인가
+  storageClassName: mylocalstorage
+  capacity:
+    storage: 20Gi  # 볼륨이 제공할 저장소 용량(물리적 용량)
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/mnt/some new/directory/structure/"
+    type: DirectoryOrCreate

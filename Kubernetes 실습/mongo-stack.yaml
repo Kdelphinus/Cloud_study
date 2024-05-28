@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb
+spec:
+  selector:
+    matchLabels:
+      app: mongodb
+  replicas: 1 # 한 번의 하나의 큐 인스턴스만 실행
+  template: # template for the pods
+    metadata:
+      labels:
+        app: mongodb
+    spec:
+      containers:
+        - name: mongodb
+          # 강의에서 감안하고 만든 버전, 이것보다 상위 버전을 사용해도 되지만 의도치 않게 문제가 생길 수 있음
+          image: mongo:3.6.5-jessie
+          volumeMounts:
+            - name: mongo-persistent-storage
+              mountPath: /data/db  # 몽고 db가 데이터를 저장하는 경로
+      volumes:
+        - name: mongo-persistent-storage
+          # pointer to the configuration of HOW we want the mount to be implemented
+          persistentVolumeClaim:
+            claimName: mongo-pvc
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  # position tracker에 properties가 fleetman-mongodb를 사용함으로 이름을 fleetman-mongodb 만든다.
+  name: fleetman-mongodb
+spec:
+  selector:
+    app: mongodb  # template에 있는 labels와 동일해야 한다.
+  ports:
+    - name: mongoport
+      port: 27017
+  type: ClusterIP
