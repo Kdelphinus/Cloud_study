@@ -1,0 +1,17 @@
+global:
+  slack_api_url: 'enter your webhook URL here. Leave the quote marks in place'  # ''으로 URL을 감싸야 한다.
+route:
+  group_by: ['alertname']
+  group_wait: 5s
+  group_interval: 1m
+  repeat_interval: 10m  # 알림을 받는 주기
+  receiver: 'slack'
+
+# curl 메시지 보낸 것과 같은 동작을 하는 블록
+receivers:
+- name: 'slack'
+  slack_configs:
+  - channel: '#alert'  # 받을 슬랙 채널
+    icon_emoji: ':bell:'
+    send_resolved: true  # 메시지를 보낼 지 말지 결정
+    text: "<!channel> \nsummary: {{ .CommonAnnotations.summary }}\ndescription: {{ .CommonAnnotations.description }}\nmessage: {{ .CommonAnnotations.message }}"
