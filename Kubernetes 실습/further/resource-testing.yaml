@@ -17,4 +17,8 @@ spec:
         image: richardchesterwood/k8s-fleetman-queue:release2
         resources:
           requests:
-            memory: 3000Mi  # 테스트를 위해 3개를 실행시킬 수 없는 메모리 값으로 설정
+            memory: 300Mi  # 테스트를 위해 3개를 실행시킬 수 없는 메모리 값으로 설정
+            cpu: 0.1
+          limits:
+            memory: 500Mi
+            cpu: 0.1
